@@ -1,6 +1,14 @@
+<<<<<<< HEAD
 .venv/
 __pycache__/
 *.pyc
 .env
 logs/
 *.db
+=======
+venv/
+.venv/
+.env
+__pycache__/
+*.pyc
+>>>>>>> origin/day02-start
