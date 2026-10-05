@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>로그인 입력 확인 | mini-watch</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/login.js" defer></script>
+</head>
+<body>
+    <h1>로그인 입력 확인</h1>
+    <p>아이디와 비밀번호가 맞는지 확인합니다. 로그인 상태를 유지하지는 않습니다.</p>
+    <form id="login-form" method="post" action="/auth/login">
+        <p>
+            <label for="username">아이디</label>
+            <input id="username" name="username" autocomplete="username">
+        </p>
+        <p>
+            <label for="password">비밀번호</label>
+            <input id="password" name="password" type="password" autocomplete="current-password">
+        </p>
+        <button type="submit">확인</button>
+    </form>
+    <p id="result" role="status" aria-live="polite">아직 요청하지 않았습니다.</p>
+    <p><a href="/">게시글 목록으로</a></p>
+</body>
+</html>
