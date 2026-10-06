@@ -15,9 +15,9 @@ Git에는 코드·SQL·설정 예시만 들어 있다. 실제 `.env`, 가상환�
 ## 실행 구조
 
 ```text
-브라우저 → 일반 Flask 5100 → general_db
+브라우저 → 일반 서비스 (Flask, 5100) → general_db
                   │ 요청 결과(method/path/status_code)
-                  └────────→ 감시 Flask 5200 → monitor_db
+                  └────────→ 감시 서비스 (Flask, 5200) → monitor_db
 ```
 
 일반 화면은 5100으로 접속한다. 감시 서비스는 일반 서비스가 보낸 기록을 수집하고 조회한다. 일반 사용자의 요청을 대신 전달하는 게이트웨이가 아니다.
@@ -32,6 +32,7 @@ mini-watch-day04-start/
 │  ├─ app.py
 │  ├─ db.py
 │  ├─ post_rules.py
+│  ├─ request_logging.py
 │  ├─ requirements.txt
 │  ├─ .env.example
 │  ├─ create_user.py
@@ -41,6 +42,10 @@ mini-watch-day04-start/
 │  ├─ try_record.py
 │  ├─ try_send_event.py
 │  ├─ try_events.py
+│  ├─ repositories/
+│  │  ├─ __init__.py
+│  │  ├─ posts.py
+│  │  └─ users.py
 │  ├─ routes/
 │  │  ├─ __init__.py
 │  │  ├─ posts.py
@@ -73,7 +78,9 @@ mini-watch-day04-start/
          └─ http_events.sql
 ```
 
-`app.py`는 앱을 만들고 두 Blueprint를 등록하며 공통 요청 기록을 남긴다. 게시글 경로는 `routes/posts.py`, 로그인 경로는 `routes/auth.py`에 있다. `post_rules.py`는 작성·수정에서 함께 사용하는 입력 검사 함수다. `db.py`의 연결 함수와 `templates`, `static`, `sql`의 위치는 그대로다.
+`app.py`는 앱 생성·설정·기능 등록·실행을 담당한다. 게시글 요청은 `routes/posts.py`, 로그인 요청은 `routes/auth.py`에서 처리한다. 두 파일은 입력을 읽고 검사한 뒤 DB 작업 함수를 부르고, HTML·JSON·이동 응답을 반환한다.
+
+게시글 SQL은 `repositories/posts.py`, 사용자 조회 SQL은 `repositories/users.py`에 있다. 두 모듈은 `db.py`의 연결 함수를 함께 사용한다. `post_rules.py`는 작성·수정의 공통 입력 검사를, `request_logging.py`는 요청 결과 기록과 감시 서비스 전송을 담당한다. `app.py`에서 `app.after_request(record_request)`로 기록 함수를 등록한다. `templates`, `static`, `sql`과 기존 연습 파일의 위치는 그대로다.
 
 ## 1. Windows 터미널과 패키지 준비
 
