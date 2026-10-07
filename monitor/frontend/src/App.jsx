@@ -1,44 +1,55 @@
 import { useState } from "react";
-
-function LoginForm(props) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
-
-  function changeUsername(event) {
-    setUsername(event.target.value);
-  }
-
-  function changePassword(event) {
-    setPassword(event.target.value);
-  }
-
-  function handleSubmit(event) {
-    event.preventDefault();
-    if (username.trim() === "" || password === "") {
-      setMessage("아이디와 비밀번호를 입력해 주세요.");
-      return;
-    }
-    setMessage(username + "의 입력을 확인했습니다. 아직 서버에 보내지는 않았습니다.");
-  }
-
-  return (
-    <section className="panel">
-      <h1>{props.title}</h1>
-      <form onSubmit={handleSubmit}>
-        <label>아이디<input value={username} onChange={changeUsername} autoComplete="username" /></label>
-        <label>비밀번호<input type="password" value={password} onChange={changePassword} autoComplete="current-password" /></label>
-        <button className="primary" type="submit">입력 확인</button>
-      </form>
-      <p className="notice" role="status">{message}</p>
-    </section>
-  );
-}
+import { loginUser } from "./api/auth.js";
+import LoginForm from "./components/LoginForm.jsx";
+import Dashboard from "./components/Dashboard.jsx";
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function login(username, password) {
+    setBusy(true);
+    setError("");
+    try {
+      const data = await loginUser(username, password);
+      setUser(data.user);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function logout() {
+    setUser(null);
+    setError("");
+  }
+
+  function clearError() {
+    setError("");
+  }
+
+  function handleError(error) {
+    setError(error.message);
+  }
+
+  if (user === null) {
+    return (
+      <main className="login-shell">
+        <LoginForm title="감시 서비스 로그인" onLogin={login} busy={busy} />
+        {error && <p className="error" role="alert">{error}</p>}
+      </main>
+    );
+  }
   return (
-    <main className="login-shell">
-      <LoginForm title="감시 서비스 로그인" />
+    <main className="shell">
+      <header className="page-header">
+        <div><h1>감시 서비스</h1><p>{user.username}님이 로그인했습니다.</p></div>
+        <button onClick={logout} disabled={busy}>로그아웃</button>
+      </header>
+      {error && <p className="error" role="alert">{error}</p>}
+      <Dashboard onError={handleError} onClearError={clearError} />
     </main>
   );
 }
