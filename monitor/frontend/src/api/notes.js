@@ -8,14 +8,14 @@ export function getNote(id) {
   return requestJson("/api/notes/" + id);
 }
 
-export function createNote(title, body, csrfToken) {
-  return requestJson("/api/notes", "POST", { title, body }, csrfToken);
+export function createNote(title, body) {
+  return requestJson("/api/notes", "POST", { title, body });
 }
 
-export function updateNote(id, title, body, csrfToken) {
-  return requestJson("/api/notes/" + id, "PUT", { title, body }, csrfToken);
+export function updateNote(id, title, body) {
+  return requestJson("/api/notes/" + id, "PUT", { title, body });
 }
 
-export function removeNote(id, csrfToken) {
-  return requestJson("/api/notes/" + id, "DELETE", null, csrfToken);
+export function removeNote(id) {
+  return requestJson("/api/notes/" + id, "DELETE", null);
 }

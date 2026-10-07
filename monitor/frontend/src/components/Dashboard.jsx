@@ -63,9 +63,9 @@ export default function Dashboard(props) {
     try {
       let data;
       if (screen === "new") {
-        data = await createNote(title, body, props.csrfToken);
+        data = await createNote(title, body);
       } else {
-        data = await updateNote(selected.id, title, body, props.csrfToken);
+        data = await updateNote(selected.id, title, body);
       }
       setSelected(data.note);
       setScreen("detail");
@@ -83,7 +83,7 @@ export default function Dashboard(props) {
     setBusy(true);
     setMessage("");
     try {
-      const data = await removeNote(selected.id, props.csrfToken);
+      const data = await removeNote(selected.id);
       setSelected(null);
       setScreen("detail");
       setMessage(data.message);
