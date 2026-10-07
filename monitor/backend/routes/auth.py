@@ -1,6 +1,6 @@
 from flask import Blueprint, request, session
 from werkzeug.security import check_password_hash
-from auth_helpers import csrf_token, current_user, valid_csrf
+from auth_helpers import current_user, csrf_token, valid_csrf
 from repositories import users as user_repository
 
 auth_bp = Blueprint("auth", __name__)
@@ -8,13 +8,19 @@ auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.get("/api/auth/me")
 def me():
-    return {"user": current_user(), "csrf_token": csrf_token()}
+    user = current_user()
+    token = csrf_token()
+    if user is None:
+        return {"user": None, "csrf_token": token}
+    return {"user": {"id": user["id"], "username": user["username"]}, "csrf_token": token}
 
 
 @auth_bp.post("/api/auth/login")
 def login():
-    if not valid_csrf(request.headers.get("X-CSRF-Token")):
-        return {"error": "요청 확인 값이 올바르지 않습니다. 새로고침 후 다시 시도해 주세요."}, 403
+    if "csrf_token" in session:
+        client_csrf = request.headers.get("X-CSRF-Token")
+        if client_csrf and not valid_csrf(client_csrf):
+            return {"error": "요청 확인 값이 올바르지 않습니다. 새로고침 후 다시 시도해 주세요."}, 403
 
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
@@ -32,15 +38,13 @@ def login():
 
     session.clear()
     session["user_id"] = user["id"]
-    return {
-        "user": {"id": user["id"], "username": user["username"]},
-        "csrf_token": csrf_token(),
-    }
+    token = csrf_token()
+
+    return {"user": {"id": user["id"], "username": user["username"]}, "csrf_token": token}
 
 
 @auth_bp.post("/api/auth/logout")
 def logout():
-    if not valid_csrf(request.headers.get("X-CSRF-Token")):
-        return {"error": "요청 확인 값이 올바르지 않습니다. 새로고침 후 다시 시도해 주세요."}, 403
     session.clear()
-    return {"user": None, "csrf_token": csrf_token()}
+    token = csrf_token()
+    return {"user": None, "csrf_token": token}

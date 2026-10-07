@@ -1,6 +1,6 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 
-password_hash = generate_password_hash("Learn123!")
+password_hash = generate_password_hash("1234")
 print(password_hash)
 print(check_password_hash(password_hash, "Learn123!"))
 print(check_password_hash(password_hash, "Wrong123!"))
