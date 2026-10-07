@@ -15,13 +15,14 @@ export default function Dashboard(props) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [filters, setFilters] = useState({ path: "", statusCode: "" });
 
-  async function loadData() {
+  async function loadData(currentFilters = filters) {
     props.onClearError();
     setLoading(true);
     try {
       const notesData = await getNotes();
-      const eventsData = await getEvents();
+      const eventsData = await getEvents(currentFilters);
       setNotes(notesData.notes);
       setEvents(eventsData.events);
     } catch (error) {
@@ -34,6 +35,11 @@ export default function Dashboard(props) {
   useEffect(function () {
     loadData();
   }, []);
+
+  async function handleFilterChange(newFilters) {
+    setFilters(newFilters);
+    await loadData(newFilters);
+  }
 
   async function selectNote(id) {
     props.onClearError();
@@ -53,19 +59,20 @@ export default function Dashboard(props) {
   function startNew() {
     props.onClearError();
     setMessage("");
+    setSelected(null);
     setScreen("new");
   }
 
-  async function saveNote(title, body) {
+  async function saveNote(title, body, status) {
     props.onClearError();
     setBusy(true);
     setMessage("");
     try {
       let data;
       if (screen === "new") {
-        data = await createNote(title, body);
+        data = await createNote(title, body, status);
       } else {
-        data = await updateNote(selected.id, title, body);
+        data = await updateNote(selected.id, title, body, status);
       }
       setSelected(data.note);
       setScreen("detail");
@@ -97,20 +104,70 @@ export default function Dashboard(props) {
 
   let content;
   if (screen === "new") {
-    content = <NoteForm key="new" heading="새 관찰 메모" note={{ title: "", body: "" }} onSave={saveNote} onCancel={function () { setScreen("detail"); }} busy={busy} />;
+    content = (
+      <NoteForm
+        key="new"
+        heading="새 관찰 메모"
+        note={{ title: "", body: "", status: "확인 전" }}
+        onSave={saveNote}
+        onCancel={function () {
+          setScreen("detail");
+        }}
+        busy={busy}
+      />
+    );
   } else if (screen === "edit") {
-    content = <NoteForm key="edit" heading="메모 수정" note={selected} onSave={saveNote} onCancel={function () { setScreen("detail"); }} busy={busy} />;
+    content = (
+      <NoteForm
+        key={selected ? `edit-${selected.id}` : "edit"}
+        heading="메모 수정"
+        note={selected}
+        onSave={saveNote}
+        onCancel={function () {
+          setScreen("detail");
+        }}
+        busy={busy}
+      />
+    );
   } else if (screen === "delete") {
-    content = <DeleteConfirm note={selected} onConfirm={deleteNote} onCancel={function () { setScreen("detail"); }} busy={busy} />;
+    content = (
+      <DeleteConfirm
+        note={selected}
+        onConfirm={deleteNote}
+        onCancel={function () {
+          setScreen("detail");
+        }}
+        busy={busy}
+      />
+    );
   } else {
-    content = <NoteDetail note={selected} onEdit={function () { setScreen("edit"); }} onDelete={function () { setScreen("delete"); }} />;
+    content = (
+      <NoteDetail
+        note={selected}
+        onEdit={function () {
+          setScreen("edit");
+        }}
+        onDelete={function () {
+          setScreen("delete");
+        }}
+      />
+    );
   }
 
   return (
     <div>
       <div className="actions">
-        <button className="primary" onClick={startNew} disabled={busy}>새 메모</button>
-        <button onClick={loadData} disabled={loading || busy}>목록 새로고침</button>
+        <button className="primary" onClick={startNew} disabled={busy}>
+          새 메모
+        </button>
+        <button
+          onClick={function () {
+            loadData();
+          }}
+          disabled={loading || busy}
+        >
+          목록 새로고침
+        </button>
       </div>
       {loading && <p role="status">자료를 불러오고 있습니다.</p>}
       {message && <p className="notice" role="status">{message}</p>}
@@ -118,7 +175,12 @@ export default function Dashboard(props) {
         <NoteList notes={notes} onSelect={selectNote} />
         {content}
       </div>
-      <EventList events={events} />
+      <EventList
+        events={events}
+        pathFilter={filters.path}
+        statusCodeFilter={filters.statusCode}
+        onApplyFilter={handleFilterChange}
+      />
     </div>
   );
 }

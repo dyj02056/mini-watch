@@ -1,8 +1,16 @@
 from flask import Blueprint, request
+from auth_helpers import api_access_error
 from note_rules import read_note
 from repositories import notes as note_repository
 
 notes_bp = Blueprint("notes", __name__)
+
+
+@notes_bp.before_request
+def check_access():
+    error = api_access_error()
+    if error:
+        return error
 
 
 @notes_bp.get("/api/notes")
@@ -23,7 +31,7 @@ def create_note():
     note, error = read_note(request.get_json(silent=True))
     if error:
         return {"error": error}, 400
-    created = note_repository.create_note(note["title"], note["body"])
+    created = note_repository.create_note(note["title"], note["body"], note["status"])
     return {"note": created}, 201
 
 
@@ -32,7 +40,7 @@ def update_note(note_id):
     note, error = read_note(request.get_json(silent=True))
     if error:
         return {"error": error}, 400
-    updated = note_repository.update_note(note_id, note["title"], note["body"])
+    updated = note_repository.update_note(note_id, note["title"], note["body"], note["status"])
     if updated is None:
         return {"error": "메모를 찾을 수 없습니다."}, 404
     return {"note": updated}

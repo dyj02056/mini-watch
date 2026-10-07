@@ -8,12 +8,12 @@ export function getNote(id) {
   return requestJson("/api/notes/" + id);
 }
 
-export function createNote(title, body) {
-  return requestJson("/api/notes", "POST", { title, body });
+export function createNote(title, body, status = "확인 전") {
+  return requestJson("/api/notes", "POST", { title, body, status });
 }
 
-export function updateNote(id, title, body) {
-  return requestJson("/api/notes/" + id, "PUT", { title, body });
+export function updateNote(id, title, body, status = "확인 전") {
+  return requestJson("/api/notes/" + id, "PUT", { title, body, status });
 }
 
 export function removeNote(id) {

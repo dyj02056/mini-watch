@@ -29,4 +29,23 @@ def get_events():
     allowed = {"login_success", "login_failure", "http_request"}
     if event_type is not None and event_type not in allowed:
         return {"error": "지원하지 않는 이벤트 종류입니다."}, 400
-    return {"events": event_repository.list_events(event_type)}
+
+    path = request.args.get("path")
+    if path is not None:
+        path = path.strip()
+        if not path:
+            path = None
+
+    status_code_raw = request.args.get("status_code")
+    status_code = None
+    if status_code_raw is not None and status_code_raw.strip():
+        try:
+            status_code = int(status_code_raw.strip())
+        except ValueError:
+            return {"error": "상태 코드는 숫자여야 합니다."}, 400
+
+    return {
+        "events": event_repository.list_events(
+            event_type=event_type, path=path, status_code=status_code
+        )
+    }
