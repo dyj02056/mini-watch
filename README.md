@@ -14,16 +14,20 @@ VS Code에서 C:\work 같은 상위 폴더를 열고 새 CMD에서 실행한다.
 git clone --branch day05-start --single-branch https://github.com/zeroskill2400/mini-watch.git mini-watch-day05
 ```
 
-받은 mini-watch-day05 폴더를 VS Code로 열고 새 CMD를 연다. 시작 브랜치를 확인한 뒤 내 작업 브랜치를 만든다.
+받은 mini-watch-day05 폴더를 VS Code로 열고 새 CMD를 연다. 먼저 시작 브랜치를 확인한다.
 
 ```text
 git status
-git switch -c feature/minsu
 ```
 
-day05-start는 받아 온 시작 코드다. 이를 그대로 비교 기준으로 두고 feature/minsu 같은 작업 브랜치에서 수정한다. minsu는 본인의 영문 이름으로 바꾼다.
+1~2교시는 내 PC 한 대에서 민수와 지연의 역할을 번갈아 맡는다. 예시 이름인 feature/minsu와 feature/jiyun을 그대로 사용한다.
 
-1교시는 문서 파일로 브랜치를 연습하므로 서버와 DB를 켜지 않는다. 교사용 저장소에는 학생 수정 내용을 push하지 않는다. 팀 저장소와 원격 협업은 5교시에 준비한다.
+- 1교시: 같은 day05-start에서 두 브랜치를 각각 만들고, team/minsu.md와 team/jiyun.md를 각자의 브랜치에 커밋한다. 브랜치를 오가며 파일을 비교한 뒤 day05-start로 돌아온다.
+- 2교시: 같은 폴더에서 day05-start에 두 작업을 하나씩 merge한다. 작업 브랜치의 추가 수정도 커밋한 뒤 다시 병합한다.
+
+브랜치를 만들기 전에 현재 브랜치를 확인하고, 전환하기 전에 수정 내용을 커밋한다. 병합할 때는 작업을 받을 브랜치로 먼저 이동한다. 명령과 확인할 파일 내용은 각 교안의 순서대로 진행한다.
+
+1~2교시는 문서 파일로 실습하므로 서버와 DB를 켜지 않는다. 교사용 저장소에는 학생 수정 내용을 push하지 않는다. 팀 저장소와 원격 협업은 5교시에 준비한다.
 
 ## 다음 교시로 이어갈 상태
 
