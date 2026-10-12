@@ -80,6 +80,6 @@ docker compose -f compose-general.yaml up -d
 
 ## Git 제출
 
-Docker 적용 변경 커밋: 아래의 `Docker 적용` 커밋 ID를 확인합니다. README 검증 결과 업데이트는 후속 커밋으로 기록합니다. GitHub 제출 시 해당 커밋을 본인 저장소에 push합니다.
+Docker 적용 커밋: `28c644d7c5b58382e30359575c43afb4498ef5fb`. 이 작업 폴더에는 Git 이력이 없어서 기존 변경과 앱 소스를 포함한 전체 작업본을 첫 커밋으로 기록했습니다. 직접 완성·수정한 핵심 파일은 `compose-general.yaml`, `general/Dockerfile`, `general/.dockerignore`, `general/app.py`, `general/request_logging.py`, `general/sql/docker-init.sql`, `gateways/general.conf`, `monitor/backend/sql/docker-init.sql`, `README.md`입니다. README의 검증 결과 및 커밋 정보 업데이트는 후속 커밋입니다. GitHub 제출 시 두 커밋을 본인 저장소에 push합니다.
 
 제출물에는 앱 소스, 두 Compose 파일, Dockerfile·`.dockerignore`, 의존성 파일과 잠금 파일, DB 초기 SQL, gateway 설정, README를 포함합니다. `.env`, 실제 비밀값, DB 데이터, `.next`, `node_modules`, 캐시, 가상환경은 제출하지 않습니다. 실습용 환경값 외의 서비스 비밀번호·토큰은 포함하지 않습니다.
