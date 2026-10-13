@@ -4,6 +4,9 @@ from routes.events import events_bp
 from routes.notes import notes_bp
 from auth_helpers import configure_session, no_cache
 from error_handlers import register_error_handlers
+from observability import init_observability
+
+init_observability()
 
 app = Flask(__name__)
 app.json.ensure_ascii = False

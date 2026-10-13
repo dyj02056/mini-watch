@@ -1,3 +1,5 @@
+import hmac
+import os
 from flask import Blueprint, request
 from auth_helpers import api_access_error
 from event_rules import make_event
@@ -13,6 +15,17 @@ def health():
 
 @events_bp.post("/api/events")
 def receive_event():
+    """일반 Flask가 보내는 요청 기록을 받습니다. EVENT_TOKEN으로 발신자를 검증합니다."""
+    token = os.environ.get("EVENT_TOKEN", "")
+    if token:
+        incoming = request.headers.get("X-Event-Token", "")
+        if not (
+            isinstance(incoming, str)
+            and isinstance(token, str)
+            and hmac.compare_digest(incoming.encode(), token.encode())
+        ):
+            return {"error": "인증되지 않은 요청입니다."}, 401
+
     event = make_event(request.get_json(silent=True))
     if event is None:
         return {"error": "method, path, status_code를 올바르게 보내 주세요."}, 400

@@ -1,0 +1,15 @@
+-- 일반 앱 배포 SQL
+-- Neon DB에 직접 실행합니다. 기존 테이블·자료를 지우지 않습니다.
+-- Neon 콘솔 > SQL Editor 또는 psql로 실행하세요.
+
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS posts (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL
+);
