@@ -233,9 +233,7 @@ Neon 감시 DB (users, http_events, notes)
 
 | 커밋 | 식별자 | 변경 파일 | 설명 |
 |---|---|---|---|
-| 배포 설정 추가 | (커밋 후 기재) | requirements.txt, Dockerfile, db.py, observability.py, auth_helpers.py, request_logging.py, app.py, .env.example, sql/deploy.sql | Neon DB 연동, Waitress 배포, Sentry 연결 |
-| Sentry 오류 수정 | (커밋 후 기재) | general/app.py | /api/sentry-test ZeroDivisionError 제거, 정상 JSON 반환 |
-| Route Handler 추가 | (커밋 후 기재) | monitor/next-frontend/app/api/[...path]/route.js, .env.example | Next.js 프록시 구현 |
+| 배포 설정 추가 | `484f404` | requirements.txt, Dockerfile, db.py, observability.py, auth_helpers.py, request_logging.py, app.py, .env.example, sql/deploy.sql, route.js, deployment-plan.md, README.md | Neon DB 연동, Waitress 배포, Sentry 연결, Route Handler 프록시 |
 
 ---
 
