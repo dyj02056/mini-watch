@@ -16,9 +16,10 @@ async function proxyRequest(request, { params }) {
   }
 
   const pathSegments = (await params).path;
-  const path = "/" + pathSegments.join("/");
+  const path = "/api/" + pathSegments.join("/");
   const search = new URL(request.url).search;
-  const targetUrl = MONITOR_API_URL.replace(/\/$/, "") + path + search;
+  const baseUrl = MONITOR_API_URL.replace(/\/api\/?$/, "").replace(/\/$/, "");
+  const targetUrl = baseUrl + path + search;
 
   // 전달할 요청 헤더 구성 (Cookie, X-CSRF-Token 포함)
   const forwardHeaders = new Headers();

@@ -315,6 +315,8 @@ python create_user.py
 | `484f404` | `general/*`, `monitor/backend/*`, `monitor/next-frontend/*`, `deployment-plan.md`, `README.md` | Neon DB 연동, Waitress WSGI 배포 구성, Sentry 연동 및 실습 오류 수정, Route Handler 프록시 구현 |
 | `982e8d5` | `deployment-plan.md` | 커밋 해시 기록 및 배포 계획 문서 정리 |
 | `b295312` | `general/*`, `monitor/backend/*`, `deployment-plan.md`, `README.md` | 앱 시작 시 명시적 load_dotenv 로드 보완 및 Neon DB 아키텍처/심화 가이드 상세 재구성 |
+| `462cb36` | `deployment-plan.md` | 커밋 히스토리 업데이트 |
+| `e081877` | `monitor/next-frontend/app/api/[...path]/route.js` | Route Handler의 백엔드 대상 URL 조립 시 `/api/` 접두사 누락 수정 |
 
 ---
 
