@@ -25,7 +25,7 @@ Flask 기반 일반 앱과 감시 앱, 감시 Next.js 프론트엔드로 구성�
 | `general/observability.py` | Sentry 초기화 모듈 신규 생성 (`mini-general` 환경) |
 | `general/auth_helpers.py` | `SESSION_COOKIE_SECURE` 환경 변수에서 읽도록 변경 |
 | `general/request_logging.py` | `EVENT_TOKEN` 헤더 추가 (감시 Flask 토큰 검증용) |
-| `general/app.py` | Sentry 초기화, `/health`, `/api/sentry-test` 오류 수정 추가 |
+| `general/app.py` | `.env` 로드, Sentry 초기화, `/health`, `/api/sentry-test` 오류 수정 추가 |
 | `general/.env.example` | Neon DB 환경 변수, MONITOR_URL, EVENT_TOKEN, Sentry 항목 추가 |
 | `general/sql/deploy.sql` | `IF NOT EXISTS` 안전 DDL 신규 생성 |
 | `monitor/backend/requirements.txt` | `waitress`, `sentry-sdk[flask]` 추가 |
@@ -33,8 +33,8 @@ Flask 기반 일반 앱과 감시 앱, 감시 Next.js 프론트엔드로 구성�
 | `monitor/backend/db.py` | `DB_SSLMODE` 환경 변수 지원 추가 |
 | `monitor/backend/observability.py` | Sentry 초기화 모듈 신규 생성 (`mini-monitor` 환경) |
 | `monitor/backend/auth_helpers.py` | `SESSION_COOKIE_SECURE` 환경 변수화 |
-| `monitor/backend/routes/events.py` | `EVENT_TOKEN` 검증 로직 추가 (`POST /api/events`) |
-| `monitor/backend/app.py` | Sentry 초기화 호출 추가 |
+| `monitor/backend/routes/events.py` | `EVENT_TOKEN` 검증 로직 추가 (`POST /api/events`), `/health` 경로 제공 |
+| `monitor/backend/app.py` | `.env` 로드, Sentry 초기화 호출 추가 |
 | `monitor/backend/.env.example` | Neon DB, EVENT_TOKEN, Sentry 항목 추가 |
 | `monitor/backend/sql/deploy.sql` | `IF NOT EXISTS` 안전 DDL 신규 생성 |
 | `monitor/next-frontend/app/api/[...path]/route.js` | Route Handler 프록시 신규 생성 |

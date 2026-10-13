@@ -1,4 +1,10 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# 로컬 개발 및 스크립트 실행 시 .env 파일 로드 (Render 환경에서는 시스템 환경 변수가 우선 적용됨)
+load_dotenv(Path(__file__).with_name(".env"))
+
 from flask import Flask
 from routes.posts import posts_bp
 from routes.auth import auth_bp

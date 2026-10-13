@@ -18,3 +18,4 @@ def init_observability():
         send_default_pii=False,
         traces_sample_rate=0.0,
     )
+
