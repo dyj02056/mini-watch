@@ -24,6 +24,7 @@ Compose의 일반 API는 `MONITOR_URL`로 감시 API 주소를 사용하고, 두
 이번 과제용 추가·수정 파일은 다음과 같습니다.
 
 - 추가: `monitor/backend/routes/analysis.py`, `monitor/backend/learning/{capture_case,normalize,http_rules,report,support,lesson2,lesson3}.py`
+- 심화 실습 추가: `monitor/backend/learning/lesson_pcap.py` (표준 라이브러리로 합성 PCAP 생성·읽기), `monitor/backend/learning/lesson_ioc.py` (문서용 IP 문자열 IOC 비교)
 - 수정: `general`의 응답 후 이벤트 전송 흐름(기존 유지), `monitor/backend/event_rules.py`, `routes/events.py`, `repositories/events.py`, `app.py`, `requirements.txt`, `compose-general.yaml`, `compose-monitor.yaml`, `monitor/next-frontend/components/MonitorClient.js`, 이 README
 
 기존 앱, DB 볼륨, 계정 및 저장된 행은 유지합니다. 분석의 새 관찰은 현재 마지막 ID를 경계로 삼으며 이전 행을 삭제하지 않습니다.
@@ -31,6 +32,8 @@ Compose의 일반 API는 `MONITOR_URL`로 감시 API 주소를 사용하고, 두
 ## 실행 전 준비
 
 Windows CMD에서 기존 프로젝트 루트에서 진행합니다. Docker Desktop과 기존 Compose 프로젝트/외부 `m5d1-events` 네트워크, 일반·감시 DB 및 로그인 계정이 준비되어 있어야 합니다. 기존 폴더나 데이터 볼륨을 지우거나 새로 복제하지 마세요.
+
+아래 캡처 명령은 CMD 문법입니다. PowerShell을 사용한다면 `&&`, `move /Y` 대신 각 단계의 성공을 확인하고 `Move-Item -Force`를 사용하세요. 이 프로젝트의 파일 분석 스크립트는 Windows PowerShell이 저장하는 UTF-8 BOM도 읽습니다.
 
 ```bat
 docker compose -f compose-general.yaml up -d --build
@@ -91,4 +94,74 @@ docker compose -f compose-monitor.yaml exec monitor-db psql -U sample -d monitor
 
 프로젝트 소스, 실행에 필요한 Dockerfile·Compose·gateway 설정, 의존성·잠금 파일, 기존 SQL 및 이 README를 GitHub 저장소 또는 ZIP으로 제출합니다. `.env`, 개인 계정 정보, 비밀번호·키·토큰, 실행 중 생성한 DB 데이터·로그, `node_modules`, `.next`, 가상환경·캐시는 제외합니다. 실제 요청 JSON, PCAP, 화면 캡처, 별도 검사 스크립트는 필수 제출물이 아닙니다.
 
-PCAP, 문서용 IP의 IOC 비교, 기준 경계 10회 실습, AI 후보 코드 검토는 선택 심화 항목이며 필수 통과 조건이 아닙니다.
+## 선택 심화 실습
+
+아래 네 항목은 필수 미션의 HTTP 근거 카드와 분리된 학습 활동입니다. 여기 적은 출력은 실행 전 예상값이며, 직접 실행한 뒤 실제 확인 상태를 별도로 기록하세요.
+
+### 교육용 PCAP: 5초와 1초 구간
+
+`learning.lesson_pcap`은 Python 표준 라이브러리만 사용해 합성 Ethernet/IPv4/UDP 프레임 6개를 만들고 임시 PCAP 파일에 씁니다. 읽기 코드는 패킷 타임스탬프를 첫 패킷 기준으로 구간 선택하고, 선택된 PCAP의 캡처 바이트 길이(`incl_len`) 합과 패킷 수를 계산합니다. PCAP은 실행 중 `/tmp`에 임시로 만들고 읽은 뒤 삭제합니다.
+
+```bat
+docker compose -f compose-monitor.yaml exec -T monitor-api python -m learning.lesson_pcap --window compare
+```
+
+예상 비교는 5초 구간에서 5패킷·225바이트, 1초 구간에서 2패킷·87바이트입니다. 5초는 오프셋 0.1, 0.5, 1.2, 2.5, 4.8초를 포함하고 5.2초 패킷은 제외합니다. 1초는 처음 두 패킷만 포함합니다. 바이트 값은 Ethernet 프레임 전체의 `incl_len` 합이며, IP 계층 payload만의 합은 아닙니다. 이 PCAP은 코드가 만든 교육용 UDP 패킷이고 실제 게시판 요청의 캡처가 아닙니다. HTTP 카드의 관찰값·근거와 합치지 않습니다.
+
+### 문서용 IP의 IOC 문자열 비교
+
+`learning.lesson_ioc`는 아래 실행으로 문서 예시 IP와 지표 문자열의 완전 일치 여부를 비교합니다. 실제 요청을 추적하거나 IP를 추측하지 않습니다.
+
+```bat
+docker compose -f compose-monitor.yaml exec -T monitor-api python -m learning.lesson_ioc
+```
+
+예상 결과는 `198.51.100.20`이 지표 목록에 있어 `match=True`, `192.0.2.10`은 없어 `match=False`입니다. 이 주소들은 문서용 예시입니다. 감시 DB의 HTTP 원본에는 IP 필드가 없으므로 이 비교로 실제 요청·사용자·공격 여부를 식별할 수 없고, 결과를 HTTP 분석 카드에 적용하지 않습니다.
+
+### 실제 요청 10회의 기준 경계
+
+1. 감시 화면에서 기준값 10을 설정하고 **새 관찰 시작**을 누릅니다.
+2. 다른 일반 게시판 요청을 만들지 않고 실제 10회 사례를 캡처합니다.
+
+```bat
+docker compose -f compose-monitor.yaml exec -T monitor-api python -m learning.capture_case 10 > monitor\backend\learning\data\observation-next.json && move /Y monitor\backend\learning\data\observation-next.json monitor\backend\learning\data\observation.json
+```
+
+3. 1분 안에 **결과 불러오기**를 누릅니다. 예상값은 관찰값 10, `검토 후보`, 조회 10행과 뒤따른 404 한 행을 합친 근거 11행입니다. `build_report`의 `count >= threshold`에서 10 >= 10이므로 기준을 충족합니다. 404는 `find_following_errors`에서 마지막 조회 이후 30초 이내인지 확인해 문맥 근거에만 포함하므로 조회 횟수에는 더하지 않습니다.
+4. 기본 사례로 돌아가려면 **새 관찰 시작**을 다시 누르고 12회 캡처를 실행한 뒤 1분 안에 결과를 불러옵니다. 예상값은 기준 10에서 관찰값 12, 검토 후보, 12개 조회와 조건에 맞는 404 근거입니다. 이전 DB 행을 삭제하거나 JSON을 편집하지 않습니다.
+
+실제 행 수가 다르면 추가 요청·시간 초과 여부를 확인하고 새 관찰부터 다시 실행합니다. 예상값을 실행 결과로 적지 말고 직접 확인 여부를 표시하세요.
+
+PowerShell에서는 캡처 횟수를 바꾸어 아래처럼 실행합니다. 첫 명령이 실패하면 `throw`에서 중단하므로 이전 `observation.json`은 교체되지 않습니다.
+
+```powershell
+$next = "monitor\backend\learning\data\observation-next.json"
+$observation = "monitor\backend\learning\data\observation.json"
+docker compose -f compose-monitor.yaml exec -T monitor-api python -m learning.capture_case 10 | Set-Content -LiteralPath $next -Encoding utf8
+if ($LASTEXITCODE -ne 0) { throw "10회 캡처가 실패했습니다. 출력과 API 로그를 확인하세요." }
+Move-Item -LiteralPath $next -Destination $observation -Force
+```
+
+기본 12회 사례로 복구할 때는 새 관찰을 시작한 뒤 위 명령의 마지막 숫자 `10`을 `12`로 바꾸어 다시 실행합니다.
+
+### AI 분석 후보 코드 검토
+
+다음은 검토 연습용 순수 분석 후보입니다. 실제 로그나 비밀값 없이 함수 로직만 평가합니다.
+
+```python
+def candidate(events, threshold):
+    views = [e for e in events if e["method"] == "GET" and e["path"] == "/"
+             and e["status_code"] == 200 and e["kind"] == "post_list"]
+    errors = [e for e in events if e["status_code"] == 404]
+    count = len(views) + len(errors)
+    return count >= threshold, views + errors
+```
+
+| 검토 항목 | 후보 코드의 문제/장점 | 현재 구현과 결정 |
+|---|---|---|
+| 조회 조건 | GET·`/`·200·`post_list` 네 조건을 모두 적용함 | `select_views`가 같은 네 조건을 적용하므로 이 부분은 채택 |
+| 404 문맥 | 모든 404를 고르고 조회 수에 더하며 시간 조건이 없음 | 거절. `find_following_errors`에서 마지막 조회 이후 `0 < gap <= 30`초인 404만 선택하고, 조회가 없으면 빈 목록을 반환 |
+| 기준 경계 | `>=` 비교를 사용함 | 이 연산은 채택. `build_report`가 조회 수만으로 `count >= threshold`를 계산하므로 10회/기준 10은 후보, 12회/기준 20은 미해당 |
+| 근거 일관성 | 결과 근거에 조회와 오류를 넣지만 ID를 분리하지 않고 조회 수에도 오류를 섞음 | 수정. 현재 보고서는 같은 `views` 목록에서 횟수와 조회 ID를 만들고, 조건을 통과한 오류만 별도 문맥 근거와 evidence ID에 추가 |
+
+이 비교는 교육용 후보에 대한 코드 검토입니다. 실제 AI 도구에서 받은 후보가 따로 있다면 그 코드를 실제 분석 함수와 대조하고, 실행 로그·계정·토큰은 AI 입력으로 보내지 마세요. PCAP과 IOC 예시는 HTTP 카드의 입력이나 근거로 사용하지 않습니다.
