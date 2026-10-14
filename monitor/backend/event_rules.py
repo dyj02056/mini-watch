@@ -17,6 +17,10 @@ def make_event(data):
         event_type = "login_success"
     elif method == "POST" and login_path and status == 401:
         event_type = "login_failure"
+    elif method == "GET" and path == "/" and status == 200:
+        event_type = "post_list"
+    elif status == 404:
+        event_type = "request_error"
     else:
         event_type = "http_request"
     return {"method": method, "path": path, "status_code": status, "event_type": event_type}

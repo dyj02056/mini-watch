@@ -8,6 +8,9 @@ export default function MonitorClient() {
   const [username, setUsername] = useState("operator");
   const [password, setPassword] = useState("");
   const [events, setEvents] = useState([]);
+  const [threshold, setThreshold] = useState(10);
+  const [observation, setObservation] = useState(null);
+  const [report, setReport] = useState(null);
   const [message, setMessage] = useState("");
   async function checkSession() {
     try {
@@ -30,6 +33,8 @@ export default function MonitorClient() {
       await requestJson("/api/auth/logout", "POST");
       setUser(null);
       setEvents([]);
+      setObservation(null);
+      setReport(null);
       setMessage("로그아웃했습니다.");
     } catch (error) { setMessage(error.message); }
   }
@@ -38,6 +43,25 @@ export default function MonitorClient() {
       const result = await requestJson("/api/events");
       setEvents(result.events);
       setMessage("요청 기록을 불러왔습니다.");
+    } catch (error) { setMessage(error.message); }
+  }
+  async function startObservation() {
+    try {
+      const result = await requestJson("/api/analysis/start", "POST", {});
+      setObservation({ after_id: result.after_id, reference_time: null });
+      setReport(null);
+      setMessage(`새 관찰을 시작했습니다. 시작 ID: ${result.after_id}`);
+    } catch (error) { setMessage(error.message); }
+  }
+  async function loadAnalysis() {
+    if (!observation) { setMessage("먼저 새 관찰을 시작해 주세요."); return; }
+    try {
+      const params = new URLSearchParams({ after_id: observation.after_id, threshold: String(threshold) });
+      if (observation.reference_time) params.set("reference_time", observation.reference_time);
+      const result = await requestJson(`/api/analysis?${params}`);
+      setObservation({ after_id: result.after_id, reference_time: result.reference_time });
+      setReport(result.cards[0]);
+      setMessage("분석 결과를 불러왔습니다. 기준을 바꾸면 같은 관찰 구간을 다시 계산합니다.");
     } catch (error) { setMessage(error.message); }
   }
   return (
@@ -62,6 +86,27 @@ export default function MonitorClient() {
               <tbody>{events.map(item => <tr key={item.id}><td>{item.event_type}</td><td>{item.method}</td><td>{item.path}</td><td>{item.status_code}</td></tr>)}</tbody>
             </table>
           </div>
+          <section className="panel" aria-labelledby="analysis-title">
+            <h2 id="analysis-title">HTTP 관찰 분석</h2>
+            <p>새 관찰은 현재 마지막 기록 ID를 경계로 설정합니다. 첫 결과 조회 후 기준 비교에 같은 시각을 사용합니다.</p>
+            <div className="actions">
+              <button onClick={startObservation}>새 관찰 시작</button>
+              <label>기준값<input type="number" min="1" max="10000" value={threshold} onChange={e => setThreshold(e.target.value)} /></label>
+              <button onClick={loadAnalysis} disabled={!observation}>결과 불러오기</button>
+            </div>
+            {observation && <p>after_id: {observation.after_id} · 기준시각: {observation.reference_time || "첫 결과 조회 시 설정"}</p>}
+            {report && <article>
+              <h3>{report.verdict}</h3>
+              <p>관찰값 {report.observed} · 기준 {report.threshold}</p>
+              <p>{report.reason}</p>
+              <p>조회 ID: {report.view_ids.join(", ") || "없음"}</p>
+              <p>뒤따른 404 ID: {report.error_ids.join(", ") || "없음"}</p>
+              <h3>근거 행 ({report.records.length})</h3>
+              <div style={{overflowX:"auto"}}><table><thead><tr><th>ID</th><th>수신시각</th><th>방법</th><th>경로</th><th>상태</th><th>종류</th></tr></thead>
+                <tbody>{report.records.map(row => <tr key={row.id}><td>{row.id}</td><td>{row.received_at}</td><td>{row.method}</td><td>{row.path}</td><td>{row.status_code}</td><td>{row.kind}</td></tr>)}</tbody>
+              </table></div>
+            </article>}
+          </section>
           <h2>관찰 메모</h2>
           <NotesClient />
         </>

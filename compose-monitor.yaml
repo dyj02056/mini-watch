@@ -20,6 +20,8 @@ services:
       retries: 20
   monitor-api:
     build: ./monitor/backend
+    volumes:
+    - ./monitor/backend/learning/data:/app/learning/data:ro
     environment:
       DB_HOST: monitor-db
       DB_PORT: '5432'
@@ -27,6 +29,7 @@ services:
       DB_USER: sample
       DB_PASSWORD: sample-only-pass
       SECRET_KEY: sample-monitor-session-key-not-for-production
+      EVENT_TOKEN: local-training-token-change-for-production
     depends_on:
       monitor-db:
         condition: service_healthy

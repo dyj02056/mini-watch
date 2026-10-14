@@ -22,3 +22,23 @@ def list_events(event_type):
     for row in rows:
         row["occurred_at"] = row["occurred_at"].isoformat()
     return rows
+
+
+def latest_event_id():
+    with connect_db() as conn:
+        row = conn.execute("SELECT COALESCE(MAX(id), 0) AS id FROM http_events").fetchone()
+    return row["id"]
+
+
+def events_after(after_id, since, until=None):
+    until = until or since
+    with connect_db() as conn:
+        rows = conn.execute(
+            """SELECT id, occurred_at, method, path, status_code, event_type
+               FROM http_events WHERE id > %s AND occurred_at >= %s AND occurred_at <= %s
+               ORDER BY id ASC""",
+            (after_id, since, until),
+        ).fetchall()
+    for row in rows:
+        row["occurred_at"] = row["occurred_at"].isoformat()
+    return rows

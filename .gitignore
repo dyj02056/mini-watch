@@ -1,9 +1,11 @@
 venv/
 .venv/
 .env
+cookies.txt
 __pycache__/
 *.pyc
 node_modules/
 dist/
 .DS_Store
 .next/
+monitor/backend/learning/data/observation*.json
