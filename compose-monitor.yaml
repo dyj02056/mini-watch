@@ -28,6 +28,7 @@ services:
       DB_NAME: monitor_db
       DB_USER: sample
       DB_PASSWORD: sample-only-pass
+      DB_SSLMODE: disable
       SECRET_KEY: sample-monitor-session-key-not-for-production
       EVENT_TOKEN: local-training-token-change-for-production
     depends_on:
