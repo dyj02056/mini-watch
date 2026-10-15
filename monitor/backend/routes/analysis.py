@@ -4,10 +4,21 @@ from flask import Blueprint, request
 
 from auth_helpers import api_access_error
 from learning.normalize import normalize_events
-from learning.report import build_report
+from learning.report import build_raw_report, build_report
 from learning.support import begin_observation, load_observation
 
 analysis_bp = Blueprint("analysis", __name__)
+
+
+@analysis_bp.get("/api/analysis/raw")
+def get_raw_logs():
+    error = api_access_error()
+    if error:
+        return error
+    try:
+        return build_raw_report()
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        return {"error": str(error)}, 400
 
 
 @analysis_bp.post("/api/analysis/start")

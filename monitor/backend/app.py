@@ -5,13 +5,13 @@ from dotenv import load_dotenv
 # 로컬 개발 및 스크립트 실행 시 .env 파일 로드 (Render 환경에서는 시스템 환경 변수가 우선 적용됨)
 load_dotenv(Path(__file__).with_name(".env"))
 
-from flask import Flask
+from flask import Flask, abort
 from routes.auth import auth_bp
 from routes.events import events_bp
 from routes.analysis import analysis_bp
 from routes.notes import notes_bp
 from routes.detection import detection_bp
-from auth_helpers import configure_session, no_cache
+from auth_helpers import api_access_error, configure_session, no_cache
 from error_handlers import register_error_handlers
 from observability import init_observability
 
@@ -27,6 +27,16 @@ app.register_blueprint(notes_bp)
 app.register_blueprint(detection_bp)
 register_error_handlers(app)
 app.after_request(no_cache)
+
+
+@app.get("/api/sentry-test")
+def sentry_test():
+    if os.environ.get("ENABLE_SENTRY_TEST", "false").lower() != "true":
+        abort(404)
+    error = api_access_error()
+    if error:
+        return error
+    return {"message": "오류를 수정했습니다."}
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

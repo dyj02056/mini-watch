@@ -16,6 +16,19 @@ async function proxyRequest(request, { params }) {
   }
 
   const pathSegments = (await params).path;
+  const resource = pathSegments.join("/");
+  const method = request.method;
+  const allowed =
+    (resource === "auth/me" && method === "GET") ||
+    ((resource === "auth/login" || resource === "auth/logout") && method === "POST") ||
+    (resource === "events" && method === "GET") ||
+    ((resource === "analysis" || resource === "analysis/raw" || resource === "detection" || resource === "sentry-test") && method === "GET") ||
+    ((resource === "analysis/start" || resource === "detection/start") && method === "POST") ||
+    (resource === "notes" && ["GET", "POST"].includes(method)) ||
+    (/^notes\/\d+$/.test(resource) && ["GET", "PUT", "DELETE"].includes(method));
+  if (!allowed) {
+    return Response.json({ error: "지원하지 않는 API 요청입니다." }, { status: 404 });
+  }
   const path = "/api/" + pathSegments.join("/");
   const search = new URL(request.url).search;
   const baseUrl = MONITOR_API_URL.replace(/\/api\/?$/, "").replace(/\/$/, "");

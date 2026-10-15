@@ -7,32 +7,33 @@
 | 위치 | 역할 |
 |---|---|
 | `general/app.py` | `app.after_request(record_request)`로 응답 후 기록 함수를 연결합니다. |
-| `general/request_logging.py` | `record_request`가 method·path·status_code를 만들고 표준 출력에 출력한 뒤 `MONITOR_URL`로 POST합니다. 로그인 요청은 비밀번호를 제외하고 입력 아이디도 전송합니다. |
+| `general/request_logging.py` | 앱 JSONL 원본을 보존하고 method·path·status_code와 로그인 성공·실패 근거를 `MONITOR_URL`로 보냅니다. 비밀번호는 기록하지 않습니다. |
 | `monitor/backend/routes/events.py` | `/api/events`에서 `EVENT_TOKEN`을 확인하고 요청을 검증합니다. |
 | `monitor/backend/event_rules.py` | `make_event`가 GET `/` 200을 `post_list`, 404를 `request_error`로 분류합니다. |
-| `monitor/backend/repositories/events.py` | `create_event`가 `http_events`에 저장합니다. ID와 `occurred_at`은 DB 기본값으로 붙고, `occurred_at`은 감시 DB의 수신·저장 시각입니다. |
-| `monitor/backend/learning/` | 실요청 캡처, 원본 정규화, 조회 행 선택, 뒤따른 오류 선택 및 보고서를 제공합니다. |
+| `monitor/backend/repositories/events.py` | `create_event`가 `http_events`에 저장합니다. 로그인 이벤트는 원본 이벤트 ID와 발생 시각도 보존하고, 나머지 요청의 ID와 시각은 DB에서 부여합니다. |
+| `monitor/backend/learning/` | 앱·Nginx 원본 로그 정규화, 실요청 캡처, 조회 행 선택, 뒤따른 오류 선택 및 보고서를 제공합니다. |
 | `monitor/backend/routes/analysis.py` | 로그인된 사용자의 관찰 시작과 DB 기반 분석 API입니다. |
 | `monitor/backend/routes/detection.py` | 새 관찰 경계 이후 같은 아이디의 60초 내 로그인 실패를 찾아 경고와 근거를 제공합니다. |
-| `monitor/frontend/src/components/DetectionPanel.jsx` | 새 관찰·탐지 새로고침·실패 횟수와 근거 행 표시를 제공합니다. |
+| `monitor/next-frontend/components/DetectionClient.js` | Compose에서 실행하는 Next.js 화면에 반복 실패 탐지를 표시합니다. |
+| `monitor/next-frontend/components/AnalysisClient.js` | 앱과 Nginx 원본을 함께 검색하고 정규화해 보여 줍니다. |
 
 Compose의 일반 API는 `MONITOR_URL`로 감시 API 주소를 사용하고, 두 API의 `EVENT_TOKEN`이 같을 때 발신자 검증이 통과합니다. Compose 파일의 토큰·세션 키는 로컬 학습용 예시이며 운영에 안전한 비밀값이 아닙니다. 실제 `.env`, 비밀번호, 토큰, 키는 제출하지 마세요.
 
 로컬 Compose의 두 API는 `DB_SSLMODE=disable`로 같은 Compose 네트워크의 PostgreSQL에 연결합니다. Neon 등 TLS를 요구하는 원격 DB 설정에서는 해당 환경에 맞는 SSL 모드를 유지합니다.
 
-로그인 실패 탐지는 `http_events.attempted_username`을 사용합니다. Neon 감시 DB가 이미 만들어져 있다면 앱을 업데이트하기 전에 `monitor/backend/sql/deploy.sql`을 Neon SQL Editor에서 실행해 nullable 컬럼을 추가하세요. 이 SQL은 기존 행을 지우지 않습니다. 각 새 로그인 요청부터 입력 아이디가 저장되며 비밀번호는 전송하거나 저장하지 않습니다. Compose의 `docker-init.sql`에도 같은 컬럼이 포함되어 있습니다.
+로그인 실패 탐지는 `http_events.attempted_username`과 Neon에 저장한 관찰 경계를 사용합니다. 기존 Neon 감시 DB가 있다면 앱을 업데이트하기 전에 `monitor/backend/sql/deploy.sql`을 Neon SQL Editor에서 실행하세요. 필요한 컬럼과 관찰 테이블을 추가하며 기존 행을 지우지 않습니다. 새 로그인 요청부터 입력 아이디가 저장되고 비밀번호는 전송하거나 저장하지 않습니다. Compose에서만 수업 계정 자동 준비가 켜집니다. Neon 배포에서는 `SEED_CLASSROOM_ACCOUNTS`를 따로 켜지 않는 한 계정을 만들지 않습니다.
 
 분석에서 `http-숫자`는 감시 DB의 원본 ID를 가리킵니다. `http_live` 기록은 실제 HTTP 수신 자료이며 사용자나 IP는 추정하지 않습니다. 조회 횟수는 GET `/` 200 `post_list` 행만 셉니다. 마지막 조회 이후 30초 이내의 404는 별도 문맥 근거로 추가하며 횟수에는 포함하지 않습니다. 검토 후보는 기준 충족을 뜻하며 공격이나 침해 확정이 아니고, 기준 미해당도 정상의 증거가 아닙니다.
 
 ## 변경 사항
 
-반복 로그인 실패 탐지는 같은 입력 아이디의 60초 안 실패 3회 이상을 기준으로 합니다. 감시 화면에서 **새 관찰 시작**을 누른 뒤 일반 사이트에서 실패를 발생시키고 **탐지 새로고침**으로 결과와 근거를 확인합니다. 기존 HTTP 조회 분석과 메모 기능도 그대로 이용할 수 있습니다.
+반복 로그인 실패 탐지는 같은 입력 아이디의 60초 안 실패 3회 이상을 기준으로 합니다. 감시 화면에서 **새 관찰 시작**을 누른 뒤 일반 사이트에서 실패를 발생시키고 **탐지 새로고침**으로 결과와 근거를 확인합니다. 기존 HTTP DB 분석과 메모 기능도 그대로 이용할 수 있습니다. 별도 로그 검토 영역에서 앱 JSONL과 Nginx access log를 경로로 검색하고 정규화해 비교할 수 있습니다.
 
 이번 과제용 추가·수정 파일은 다음과 같습니다.
 
-- 추가: `monitor/backend/routes/analysis.py`, `monitor/backend/learning/{capture_case,normalize,http_rules,report,support,lesson2,lesson3}.py`
+- 추가: 반복 실패 탐지 API·규칙·관찰 저장소, 앱/Nginx 로그 정규화·통합 화면, 교실 수업 계정 준비 스크립트
 - 심화 실습 추가: `monitor/backend/learning/lesson_pcap.py` (표준 라이브러리로 합성 PCAP 생성·읽기), `monitor/backend/learning/lesson_ioc.py` (문서용 IP 문자열 IOC 비교)
-- 수정: `general`의 응답 후 이벤트 전송 흐름(기존 유지), `monitor/backend/event_rules.py`, `routes/events.py`, `repositories/events.py`, `app.py`, `requirements.txt`, `compose-general.yaml`, `compose-monitor.yaml`, `monitor/next-frontend/components/MonitorClient.js`, 이 README
+- 수정: 이벤트 검증·분류, Neon용 비파괴 스키마 변경, Sentry 요청 정보 필터링, Compose 로그 공유 설정과 Next.js 화면·API 프록시, 배포 문서
 
 기존 앱, DB 볼륨, 계정 및 저장된 행은 유지합니다. 분석의 새 관찰은 현재 마지막 ID를 경계로 삼으며 이전 행을 삭제하지 않습니다.
 
@@ -48,6 +49,8 @@ docker compose -f compose-monitor.yaml up -d --build
 ```
 
 감시 화면은 `http://localhost:8082`, 일반 게시판은 `http://localhost:8081`입니다. 로그인한 뒤 API 계정이 준비되어 있는지 확인하세요. 일반 서비스는 감시 API가 실행 중일 때 요청을 기록합니다.
+
+Compose 첫 실행은 `class-student` / `classroom1234!`와 `class-operator` / `classroom1234!` 수업 계정을 준비합니다. 기존 `student`·`operator` 계정도 유지됩니다. 이 자동 계정 준비는 로컬 Compose에서만 활성화되어 있고 Neon 배포에는 적용되지 않습니다.
 
 ## 파일 실습: 실제 4회 사례
 

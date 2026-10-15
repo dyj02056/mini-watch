@@ -96,6 +96,9 @@ SESSION_COOKIE_SECURE=true  # Render HTTPS 환경 (로컬 개발 시 false)
 # 감시 Flask 주소 및 토큰
 MONITOR_URL=https://your-monitor-api.onrender.com/api/events
 EVENT_TOKEN=YOUR_SHARED_EVENT_TOKEN_HERE
+# Set only when this API has a shared writable classroom log volume.
+REQUEST_LOG_PATH=/classroom-logs/app.jsonl
+SEED_CLASSROOM_ACCOUNTS=false
 
 # Sentry 오류 수집
 SENTRY_DSN=
@@ -121,6 +124,8 @@ SESSION_COOKIE_SECURE=true  # Render HTTPS 환경 (로컬 개발 시 false)
 
 # 일반↔감시 요청 검증 토큰 (일반 앱의 EVENT_TOKEN과 동일값)
 EVENT_TOKEN=YOUR_SHARED_EVENT_TOKEN_HERE
+CLASSROOM_LOG_DIR=/classroom-logs
+SEED_CLASSROOM_ACCOUNTS=false
 
 # Sentry 오류 수집
 SENTRY_DSN=
@@ -170,7 +175,20 @@ Neon 콘솔(https://console.neon.tech)의 **SQL Editor** 또는 로컬 `psql` �
        path TEXT NOT NULL,
        status_code INTEGER NOT NULL,
        event_type TEXT NOT NULL,
-       attempted_username TEXT
+       attempted_username TEXT,
+       source_event_id TEXT
+   );
+
+   ALTER TABLE http_events ADD COLUMN IF NOT EXISTS attempted_username TEXT;
+   ALTER TABLE http_events ADD COLUMN IF NOT EXISTS source_event_id TEXT;
+   CREATE UNIQUE INDEX IF NOT EXISTS http_events_source_event_id_unique
+       ON http_events (source_event_id);
+
+   CREATE TABLE IF NOT EXISTS detection_observations (
+       sequence BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+       id TEXT UNIQUE NOT NULL,
+       started_at TIMESTAMPTZ NOT NULL,
+       after_id INTEGER NOT NULL
    );
 
    CREATE TABLE IF NOT EXISTS notes (
@@ -180,7 +198,9 @@ Neon 콘솔(https://console.neon.tech)의 **SQL Editor** 또는 로컬 `psql` �
    );
    ```
 
-   기존 Neon 감시 DB에도 `monitor/backend/sql/deploy.sql`의 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`가 실행되어야 합니다. 이 변경은 새 로그인 실패의 입력 아이디를 저장해 탐지 근거를 표시하며, 비밀번호나 기존 행은 변경하지 않습니다.
+   기존 Neon 감시 DB에는 `monitor/backend/sql/deploy.sql` 전체를 실행합니다. `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`가 필요한 열을 추가하고, 관찰 시작 경계를 저장하는 테이블을 만듭니다. 기존 행은 삭제하지 않습니다. 새 로그인 실패의 입력 아이디와 출처 이벤트 ID를 저장하며 비밀번호는 저장하지 않습니다.
+
+앱·Nginx 원본 로그 화면은 두 서비스가 같은 공유 파일 볼륨을 쓸 때 동작합니다. Compose 예시는 `m5d1-classroom-logs`를 연결합니다. 별도 호스트에 배포한다면 같은 공유 볼륨을 양쪽 서비스에 연결하고 `REQUEST_LOG_PATH`와 `CLASSROOM_LOG_DIR`을 설정하세요. 공유 파일 저장소가 없으면 Neon의 HTTP 이벤트 분석과 반복 로그인 탐지는 계속 동작하지만, 원본 파일 로그 화면에는 자료가 표시되지 않습니다.
 
 ### 계정 준비 (`create_user.py`)
 

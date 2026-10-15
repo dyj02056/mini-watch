@@ -1,24 +1,29 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { requestJson } from "../api/client";
 import NotesClient from "./NotesClient";
+import DetectionClient from "./DetectionClient";
+import AnalysisClient from "./AnalysisClient";
 
 export default function MonitorClient() {
   const [user, setUser] = useState(null);
-  const [username, setUsername] = useState("operator");
+  const [username, setUsername] = useState("class-operator");
   const [password, setPassword] = useState("");
   const [events, setEvents] = useState([]);
   const [threshold, setThreshold] = useState(10);
   const [observation, setObservation] = useState(null);
   const [report, setReport] = useState(null);
   const [message, setMessage] = useState("");
-  async function checkSession() {
+  const checkSession = useCallback(async () => {
     try {
       const result = await requestJson("/api/auth/me");
       setUser(result.user);
       setMessage(result.user ? "로그인 상태를 확인했습니다." : "로그인해 주세요.");
     } catch (error) { setMessage(error.message); }
-  }
+  }, []);
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
   async function login(event) {
     event.preventDefault();
     try {
@@ -71,6 +76,7 @@ export default function MonitorClient() {
       <p role="status">{message}</p>
       {!user ? (
         <form onSubmit={login}>
+          <p>수업 계정 class-operator / classroom1234!를 사용하거나 기존 operator 계정을 이용하세요.</p>
           <label>아이디<input value={username} onChange={e => setUsername(e.target.value)} /></label>
           <label>비밀번호<input type="password" value={password} onChange={e => setPassword(e.target.value)} /></label>
           <button>로그인</button>
@@ -79,11 +85,16 @@ export default function MonitorClient() {
         <>
           <p>{user.username} 사용자</p>
           <button onClick={logout}>로그아웃</button>
+          <DetectionClient />
+          <details className="detection-log-review">
+            <summary>앱·Nginx 원본 로그 함께 보기</summary>
+            <AnalysisClient />
+          </details>
           <h2>요청 기록</h2>
           <button onClick={loadEvents}>기록 불러오기</button>
           <div style={{overflowX:"auto"}}>
-            <table><thead><tr><th>종류</th><th>방법</th><th>경로</th><th>상태</th></tr></thead>
-              <tbody>{events.map(item => <tr key={item.id}><td>{item.event_type}</td><td>{item.method}</td><td>{item.path}</td><td>{item.status_code}</td></tr>)}</tbody>
+            <table><thead><tr><th>종류</th><th>방법</th><th>경로</th><th>상태</th><th>입력 계정</th></tr></thead>
+              <tbody>{events.map(item => <tr key={item.id}><td>{item.event_type}</td><td>{item.method}</td><td>{item.path}</td><td>{item.status_code}</td><td>{item.attempted_username || "—"}</td></tr>)}</tbody>
             </table>
           </div>
           <section className="panel" aria-labelledby="analysis-title">

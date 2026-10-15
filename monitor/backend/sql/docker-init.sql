@@ -6,10 +6,21 @@ CREATE TABLE IF NOT EXISTS http_events (
     path TEXT NOT NULL,
     status_code INTEGER NOT NULL,
     event_type TEXT NOT NULL,
-    attempted_username TEXT
+    attempted_username TEXT,
+    source_event_id TEXT
 );
 
 ALTER TABLE http_events ADD COLUMN IF NOT EXISTS attempted_username TEXT;
+ALTER TABLE http_events ADD COLUMN IF NOT EXISTS source_event_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS http_events_source_event_id_unique
+    ON http_events (source_event_id);
+
+CREATE TABLE IF NOT EXISTS detection_observations (
+    sequence BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id TEXT UNIQUE NOT NULL,
+    started_at TIMESTAMPTZ NOT NULL,
+    after_id INTEGER NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

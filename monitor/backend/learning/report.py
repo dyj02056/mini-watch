@@ -1,4 +1,5 @@
 from learning.http_rules import find_following_errors, select_views
+from learning.merge import load_normalized_events
 
 
 def build_report(events, threshold):
@@ -20,4 +21,14 @@ def build_report(events, threshold):
             "evidence_ids": [item["id"] for item in evidence],
             "records": evidence,
         }],
+    }
+
+
+def build_raw_report():
+    events = load_normalized_events()
+    return {
+        "ready": True,
+        "events": events,
+        "total_count": len(events),
+        "error_count": sum(event["status_code"] >= 400 for event in events),
     }

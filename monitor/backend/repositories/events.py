@@ -5,10 +5,12 @@ def create_event(event):
     with connect_db() as conn:
         conn.execute(
             """INSERT INTO http_events
-               (method, path, status_code, event_type, attempted_username)
-               VALUES (%s, %s, %s, %s, %s)""",
+               (method, path, status_code, event_type, attempted_username, source_event_id, occurred_at)
+               VALUES (%s, %s, %s, %s, %s, %s, COALESCE(%s, NOW()))
+               ON CONFLICT (source_event_id) DO NOTHING""",
             (event["method"], event["path"], event["status_code"],
-             event["event_type"], event.get("attempted_username")),
+             event["event_type"], event.get("attempted_username"), event.get("source_event_id"),
+             event.get("source_occurred_at")),
         )
 
 
@@ -37,7 +39,7 @@ def events_after(after_id, since, until=None):
     with connect_db() as conn:
         rows = conn.execute(
             """SELECT id, occurred_at, method, path, status_code, event_type,
-                      attempted_username
+                      attempted_username, source_event_id
                FROM http_events WHERE id > %s AND occurred_at >= %s AND occurred_at <= %s
                ORDER BY id ASC""",
             (after_id, since, until),

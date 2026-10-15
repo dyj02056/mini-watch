@@ -2,10 +2,13 @@ import hmac
 import os
 from flask import Blueprint, request
 from auth_helpers import api_access_error
-from event_rules import make_event
+from event_rules import EVENT_TYPES, make_event
 from repositories import events as event_repository
 
 events_bp = Blueprint("events", __name__)
+EVENT_TOKEN = os.environ.get("EVENT_TOKEN", "")
+if len(EVENT_TOKEN) < 32 or EVENT_TOKEN.startswith("CHANGE_ME"):
+    raise RuntimeError("EVENT_TOKEN에 직접 생성한 32자 이상의 값을 설정해 주세요.")
 
 
 @events_bp.get("/health")
@@ -16,15 +19,9 @@ def health():
 @events_bp.post("/api/events")
 def receive_event():
     """일반 Flask가 보내는 요청 기록을 받습니다. EVENT_TOKEN으로 발신자를 검증합니다."""
-    token = os.environ.get("EVENT_TOKEN", "")
-    if token:
-        incoming = request.headers.get("X-Event-Token", "")
-        if not (
-            isinstance(incoming, str)
-            and isinstance(token, str)
-            and hmac.compare_digest(incoming.encode(), token.encode())
-        ):
-            return {"error": "인증되지 않은 요청입니다."}, 401
+    incoming = request.headers.get("X-Event-Token", "")
+    if not hmac.compare_digest(incoming.encode(), EVENT_TOKEN.encode()):
+        return {"error": "인증되지 않은 요청입니다."}, 401
 
     event = make_event(request.get_json(silent=True))
     if event is None:
@@ -39,7 +36,7 @@ def get_events():
     if error:
         return error
     event_type = request.args.get("event_type")
-    allowed = {"login_success", "login_failure", "http_request", "post_list", "request_error"}
+    allowed = EVENT_TYPES
     if event_type is not None and event_type not in allowed:
         return {"error": "지원하지 않는 이벤트 종류입니다."}, 400
     return {"events": event_repository.list_events(event_type)}

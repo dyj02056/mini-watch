@@ -1,13 +1,38 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
+import json
+from uuid import uuid4
 
-from flask import Blueprint, request
+from flask import Blueprint
 
 from auth_helpers import api_access_error
+from detection_rules import build_detection
+from learning.log_data import read_complete_lines
 from repositories import events as event_repository
+from repositories import observations as observation_repository
 
 detection_bp = Blueprint("detection", __name__)
-THRESHOLD = 3
-WINDOW_SECONDS = 60
+
+
+def invalid_app_line_count():
+    invalid_line_count = 0
+    for line in read_complete_lines("app.jsonl"):
+        try:
+            json.loads(line)
+        except (json.JSONDecodeError, UnicodeError):
+            invalid_line_count += 1
+    return invalid_line_count
+
+
+def read_detection(observation=None):
+    observation = observation if observation is not None else observation_repository.current_observation()
+    now = datetime.now(timezone.utc)
+    invalid_line_count = invalid_app_line_count()
+    if observation is None:
+        return build_detection([], None, now, invalid_line_count)
+    rows = event_repository.events_after(
+        observation["after_id"], observation["started_at"], now
+    )
+    return build_detection(rows, observation, now, invalid_line_count)
 
 
 @detection_bp.post("/api/detection/start")
@@ -15,10 +40,13 @@ def start_detection():
     error = api_access_error()
     if error:
         return error
-    return {
+    observation = {
+        "id": str(uuid4()),
+        "started_at": datetime.now(timezone.utc).isoformat(timespec="microseconds"),
         "after_id": event_repository.latest_event_id(),
-        "started_at": datetime.now(timezone.utc).isoformat(),
     }
+    observation_repository.create_observation(observation)
+    return read_detection(observation), 201
 
 
 @detection_bp.get("/api/detection")
@@ -26,51 +54,4 @@ def get_detection():
     error = api_access_error()
     if error:
         return error
-    try:
-        after_id = int(request.args.get("after_id", ""))
-        started_at = datetime.fromisoformat(request.args.get("started_at", "").replace("Z", "+00:00"))
-        if after_id < 0:
-            raise ValueError
-    except (TypeError, ValueError):
-        return {"error": "관찰 시작 정보가 올바르지 않습니다."}, 400
-    if started_at.tzinfo is None:
-        started_at = started_at.replace(tzinfo=timezone.utc)
-
-    now = datetime.now(timezone.utc)
-    rows = event_repository.events_after(after_id, started_at, now)
-    failures = [row for row in rows if row["event_type"] == "login_failure"
-                and row.get("attempted_username")]
-    by_username = {}
-    for event in failures:
-        by_username.setdefault(event["attempted_username"], []).append(event)
-
-    alerts = []
-    for username, events in by_username.items():
-        for index, first in enumerate(events):
-            evidence = [first]
-            first_time = datetime.fromisoformat(first["occurred_at"].replace("Z", "+00:00"))
-            for candidate in events[index + 1:]:
-                timestamp = datetime.fromisoformat(candidate["occurred_at"].replace("Z", "+00:00"))
-                if timestamp - first_time <= timedelta(seconds=WINDOW_SECONDS):
-                    evidence.append(candidate)
-                else:
-                    break
-            if len(evidence) >= THRESHOLD:
-                alerts.append({"attempted_username": username, "occurred_at": first["occurred_at"],
-                               "events": evidence[:THRESHOLD]})
-                break
-
-    cutoff = now - timedelta(seconds=WINDOW_SECONDS)
-    recent_counts = {}
-    for event in failures:
-        timestamp = datetime.fromisoformat(event["occurred_at"].replace("Z", "+00:00"))
-        if timestamp >= cutoff:
-            recent_counts[event["attempted_username"]] = recent_counts.get(event["attempted_username"], 0) + 1
-
-    return {
-        "observation": {"after_id": after_id, "started_at": started_at.isoformat()},
-        "rule": {"threshold": THRESHOLD, "window_seconds": WINDOW_SECONDS},
-        "counts": [{"attempted_username": username, "count": count}
-                   for username, count in sorted(recent_counts.items())],
-        "alerts": alerts,
-    }
+    return read_detection()
