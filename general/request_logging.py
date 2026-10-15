@@ -9,6 +9,12 @@ def record_request(response):
         "path": request.path,
         "status_code": response.status_code,
     }
+    # Login evidence needs the submitted account name, never the password.
+    if request.method == "POST" and request.path in {"/auth/login", "/api/auth/login"}:
+        data = request.get_json(silent=True)
+        username = data.get("username") if isinstance(data, dict) else request.form.get("username")
+        if isinstance(username, str):
+            event["attempted_username"] = username.strip()[:100]
     print(json.dumps(event, ensure_ascii=False), flush=True)
     try:
         monitor_url = os.environ.get("MONITOR_URL", "http://monitor-api:5000/api/events")

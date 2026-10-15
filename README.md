@@ -7,21 +7,26 @@
 | 위치 | 역할 |
 |---|---|
 | `general/app.py` | `app.after_request(record_request)`로 응답 후 기록 함수를 연결합니다. |
-| `general/request_logging.py` | `record_request`가 method·path·status_code를 만들고 표준 출력에 출력한 뒤 `MONITOR_URL`로 POST합니다. 출력과 DB 저장은 별도 동작입니다. |
+| `general/request_logging.py` | `record_request`가 method·path·status_code를 만들고 표준 출력에 출력한 뒤 `MONITOR_URL`로 POST합니다. 로그인 요청은 비밀번호를 제외하고 입력 아이디도 전송합니다. |
 | `monitor/backend/routes/events.py` | `/api/events`에서 `EVENT_TOKEN`을 확인하고 요청을 검증합니다. |
 | `monitor/backend/event_rules.py` | `make_event`가 GET `/` 200을 `post_list`, 404를 `request_error`로 분류합니다. |
 | `monitor/backend/repositories/events.py` | `create_event`가 `http_events`에 저장합니다. ID와 `occurred_at`은 DB 기본값으로 붙고, `occurred_at`은 감시 DB의 수신·저장 시각입니다. |
 | `monitor/backend/learning/` | 실요청 캡처, 원본 정규화, 조회 행 선택, 뒤따른 오류 선택 및 보고서를 제공합니다. |
 | `monitor/backend/routes/analysis.py` | 로그인된 사용자의 관찰 시작과 DB 기반 분석 API입니다. |
-| `monitor/next-frontend/components/MonitorClient.js` | 새 관찰·기준 입력·결과 조회 및 근거 행 표시를 제공합니다. |
+| `monitor/backend/routes/detection.py` | 새 관찰 경계 이후 같은 아이디의 60초 내 로그인 실패를 찾아 경고와 근거를 제공합니다. |
+| `monitor/frontend/src/components/DetectionPanel.jsx` | 새 관찰·탐지 새로고침·실패 횟수와 근거 행 표시를 제공합니다. |
 
 Compose의 일반 API는 `MONITOR_URL`로 감시 API 주소를 사용하고, 두 API의 `EVENT_TOKEN`이 같을 때 발신자 검증이 통과합니다. Compose 파일의 토큰·세션 키는 로컬 학습용 예시이며 운영에 안전한 비밀값이 아닙니다. 실제 `.env`, 비밀번호, 토큰, 키는 제출하지 마세요.
 
 로컬 Compose의 두 API는 `DB_SSLMODE=disable`로 같은 Compose 네트워크의 PostgreSQL에 연결합니다. Neon 등 TLS를 요구하는 원격 DB 설정에서는 해당 환경에 맞는 SSL 모드를 유지합니다.
 
+로그인 실패 탐지는 `http_events.attempted_username`을 사용합니다. Neon 감시 DB가 이미 만들어져 있다면 앱을 업데이트하기 전에 `monitor/backend/sql/deploy.sql`을 Neon SQL Editor에서 실행해 nullable 컬럼을 추가하세요. 이 SQL은 기존 행을 지우지 않습니다. 각 새 로그인 요청부터 입력 아이디가 저장되며 비밀번호는 전송하거나 저장하지 않습니다. Compose의 `docker-init.sql`에도 같은 컬럼이 포함되어 있습니다.
+
 분석에서 `http-숫자`는 감시 DB의 원본 ID를 가리킵니다. `http_live` 기록은 실제 HTTP 수신 자료이며 사용자나 IP는 추정하지 않습니다. 조회 횟수는 GET `/` 200 `post_list` 행만 셉니다. 마지막 조회 이후 30초 이내의 404는 별도 문맥 근거로 추가하며 횟수에는 포함하지 않습니다. 검토 후보는 기준 충족을 뜻하며 공격이나 침해 확정이 아니고, 기준 미해당도 정상의 증거가 아닙니다.
 
 ## 변경 사항
+
+반복 로그인 실패 탐지는 같은 입력 아이디의 60초 안 실패 3회 이상을 기준으로 합니다. 감시 화면에서 **새 관찰 시작**을 누른 뒤 일반 사이트에서 실패를 발생시키고 **탐지 새로고침**으로 결과와 근거를 확인합니다. 기존 HTTP 조회 분석과 메모 기능도 그대로 이용할 수 있습니다.
 
 이번 과제용 추가·수정 파일은 다음과 같습니다.
 

@@ -1,9 +1,14 @@
 export async function requestJson(path, method = "GET", data = null) {
+  const upperMethod = method.toUpperCase();
+  const headers = { "Content-Type": "application/json" };
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(upperMethod)) {
+    const sessionResponse = await fetch("/api/auth/me");
+    const sessionData = await sessionResponse.json();
+    headers["X-CSRF-Token"] = sessionData.csrf_token;
+  }
   const options = {
     method: method,
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
   };
   if (data !== null) {
     options.body = JSON.stringify(data);

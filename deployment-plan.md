@@ -169,7 +169,8 @@ Neon 콘솔(https://console.neon.tech)의 **SQL Editor** 또는 로컬 `psql` �
        method TEXT NOT NULL,
        path TEXT NOT NULL,
        status_code INTEGER NOT NULL,
-       event_type TEXT NOT NULL
+       event_type TEXT NOT NULL,
+       attempted_username TEXT
    );
 
    CREATE TABLE IF NOT EXISTS notes (
@@ -178,6 +179,8 @@ Neon 콘솔(https://console.neon.tech)의 **SQL Editor** 또는 로컬 `psql` �
        body TEXT NOT NULL
    );
    ```
+
+   기존 Neon 감시 DB에도 `monitor/backend/sql/deploy.sql`의 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`가 실행되어야 합니다. 이 변경은 새 로그인 실패의 입력 아이디를 저장해 탐지 근거를 표시하며, 비밀번호나 기존 행은 변경하지 않습니다.
 
 ### 계정 준비 (`create_user.py`)
 

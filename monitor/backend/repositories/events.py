@@ -4,9 +4,11 @@ from db import connect_db
 def create_event(event):
     with connect_db() as conn:
         conn.execute(
-            """INSERT INTO http_events (method, path, status_code, event_type)
-               VALUES (%s, %s, %s, %s)""",
-            (event["method"], event["path"], event["status_code"], event["event_type"]),
+            """INSERT INTO http_events
+               (method, path, status_code, event_type, attempted_username)
+               VALUES (%s, %s, %s, %s, %s)""",
+            (event["method"], event["path"], event["status_code"],
+             event["event_type"], event.get("attempted_username")),
         )
 
 
@@ -34,7 +36,8 @@ def events_after(after_id, since, until=None):
     until = until or since
     with connect_db() as conn:
         rows = conn.execute(
-            """SELECT id, occurred_at, method, path, status_code, event_type
+            """SELECT id, occurred_at, method, path, status_code, event_type,
+                      attempted_username
                FROM http_events WHERE id > %s AND occurred_at >= %s AND occurred_at <= %s
                ORDER BY id ASC""",
             (after_id, since, until),

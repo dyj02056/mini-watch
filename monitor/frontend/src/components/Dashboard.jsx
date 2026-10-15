@@ -6,6 +6,7 @@ import NoteDetail from "./NoteDetail.jsx";
 import NoteForm from "./NoteForm.jsx";
 import DeleteConfirm from "./DeleteConfirm.jsx";
 import EventList from "./EventList.jsx";
+import DetectionPanel from "./DetectionPanel.jsx";
 
 export default function Dashboard(props) {
   const [notes, setNotes] = useState([]);
@@ -114,6 +115,7 @@ export default function Dashboard(props) {
       </div>
       {loading && <p role="status">자료를 불러오고 있습니다.</p>}
       {message && <p className="notice" role="status">{message}</p>}
+      <DetectionPanel onError={props.onError} onClearError={props.onClearError} />
       <div className="workspace">
         <NoteList notes={notes} onSelect={selectNote} />
         {content}

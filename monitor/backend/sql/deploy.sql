@@ -14,8 +14,11 @@ CREATE TABLE IF NOT EXISTS http_events (
     method TEXT NOT NULL,
     path TEXT NOT NULL,
     status_code INTEGER NOT NULL,
-    event_type TEXT NOT NULL
+    event_type TEXT NOT NULL,
+    attempted_username TEXT
 );
+
+ALTER TABLE http_events ADD COLUMN IF NOT EXISTS attempted_username TEXT;
 
 CREATE TABLE IF NOT EXISTS notes (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

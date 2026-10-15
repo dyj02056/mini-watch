@@ -23,4 +23,10 @@ def make_event(data):
         event_type = "request_error"
     else:
         event_type = "http_request"
-    return {"method": method, "path": path, "status_code": status, "event_type": event_type}
+    attempted_username = data.get("attempted_username")
+    if not isinstance(attempted_username, str) or not attempted_username.strip():
+        attempted_username = None
+    else:
+        attempted_username = attempted_username.strip()[:100]
+    return {"method": method, "path": path, "status_code": status,
+            "event_type": event_type, "attempted_username": attempted_username}

@@ -10,6 +10,7 @@ from routes.auth import auth_bp
 from routes.events import events_bp
 from routes.analysis import analysis_bp
 from routes.notes import notes_bp
+from routes.detection import detection_bp
 from auth_helpers import configure_session, no_cache
 from error_handlers import register_error_handlers
 from observability import init_observability
@@ -23,6 +24,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(events_bp)
 app.register_blueprint(analysis_bp)
 app.register_blueprint(notes_bp)
+app.register_blueprint(detection_bp)
 register_error_handlers(app)
 app.after_request(no_cache)
 
