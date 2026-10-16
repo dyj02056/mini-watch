@@ -76,7 +76,7 @@ export default function MonitorClient() {
   }
   return (
     <main>
-      <h1>감시 서비스</h1>
+      <h1>사건 조사·플레이북 실습</h1>
       <button onClick={checkSession}>현재 로그인 확인</button>
       <p role="status">{message}</p>
       {!user ? (
@@ -90,50 +90,53 @@ export default function MonitorClient() {
         <>
           <p>{user.username} 사용자</p>
           <button onClick={logout}>로그아웃</button>
-          <DetectionClient />
-          <details className="detection-log-review" id="day5-workflow">
-            <summary>공지 이력·조사·자동 대응 실습</summary>
+          <LightPlaybookClient username={user.username} observationId={historyObservationId} />
+          <details className="detection-log-review" id="day5-workflow" open>
+            <summary>사건 만들기·근거 확인</summary>
             <div className="soar-preparation">
-              <p>공지 저장과 파일 센서 기록을 같은 관찰 경계에서 연결합니다. 기존 HTTP 분석 관찰과는 별도로 저장됩니다.</p>
+              <p>일반 사이트에 로그인하고 공지를 저장하면 요청 이력과 파일 센서 기록을 조사·대응 흐름에 연결합니다.</p>
               <HistoryDetectionClient onObservation={setHistoryObservationId} />
               <InvestigationClient key={historyObservationId || "history-unstarted"} automationMode />
-              <LightPlaybookClient username={user.username} observationId={historyObservationId} />
             </div>
           </details>
-          <details className="detection-log-review">
-            <summary>앱·Nginx 원본 로그 함께 보기</summary>
-            <AnalysisClient />
-          </details>
-          <h2>요청 기록</h2>
-          <button onClick={loadEvents}>기록 불러오기</button>
-          <div style={{overflowX:"auto"}}>
-            <table><thead><tr><th>종류</th><th>방법</th><th>경로</th><th>상태</th><th>입력 계정</th></tr></thead>
-              <tbody>{events.map(item => <tr key={item.id}><td>{item.event_type}</td><td>{item.method}</td><td>{item.path}</td><td>{item.status_code}</td><td>{item.attempted_username || "—"}</td></tr>)}</tbody>
-            </table>
-          </div>
-          <section className="panel" aria-labelledby="analysis-title">
-            <h2 id="analysis-title">HTTP 관찰 분석</h2>
-            <p>새 관찰은 현재 마지막 기록 ID를 경계로 설정합니다. 첫 결과 조회 후 기준 비교에 같은 시각을 사용합니다.</p>
-            <div className="actions">
-              <button onClick={startObservation}>새 관찰 시작</button>
-              <label>기준값<input type="number" min="1" max="10000" value={threshold} onChange={e => setThreshold(e.target.value)} /></label>
-              <button onClick={loadAnalysis} disabled={!observation}>결과 불러오기</button>
+          <details className="detection-log-review" id="day06-monitoring">
+            <summary>기존 HTTP 탐지·분석·메모</summary>
+            <DetectionClient />
+            <details className="detection-log-review">
+              <summary>앱·Nginx 원본 로그 함께 보기</summary>
+              <AnalysisClient />
+            </details>
+            <h2>요청 기록</h2>
+            <button onClick={loadEvents}>기록 불러오기</button>
+            <div style={{overflowX:"auto"}}>
+              <table><thead><tr><th>종류</th><th>방법</th><th>경로</th><th>상태</th><th>입력 계정</th></tr></thead>
+                <tbody>{events.map(item => <tr key={item.id}><td>{item.event_type}</td><td>{item.method}</td><td>{item.path}</td><td>{item.status_code}</td><td>{item.attempted_username || "—"}</td></tr>)}</tbody>
+              </table>
             </div>
-            {observation && <p>after_id: {observation.after_id} · 기준시각: {observation.reference_time || "첫 결과 조회 시 설정"}</p>}
-            {report && <article>
-              <h3>{report.verdict}</h3>
-              <p>관찰값 {report.observed} · 기준 {report.threshold}</p>
-              <p>{report.reason}</p>
-              <p>조회 ID: {report.view_ids.join(", ") || "없음"}</p>
-              <p>뒤따른 404 ID: {report.error_ids.join(", ") || "없음"}</p>
-              <h3>근거 행 ({report.records.length})</h3>
-              <div style={{overflowX:"auto"}}><table><thead><tr><th>ID</th><th>수신시각</th><th>방법</th><th>경로</th><th>상태</th><th>종류</th></tr></thead>
-                <tbody>{report.records.map(row => <tr key={row.id}><td>{row.id}</td><td>{row.received_at}</td><td>{row.method}</td><td>{row.path}</td><td>{row.status_code}</td><td>{row.kind}</td></tr>)}</tbody>
-              </table></div>
-            </article>}
-          </section>
-          <h2>관찰 메모</h2>
-          <NotesClient />
+            <section className="panel" aria-labelledby="analysis-title">
+              <h2 id="analysis-title">HTTP 관찰 분석</h2>
+              <p>새 관찰은 현재 마지막 기록 ID를 경계로 설정합니다. 첫 결과 조회 후 기준 비교에 같은 시각을 사용합니다.</p>
+              <div className="actions">
+                <button onClick={startObservation}>새 관찰 시작</button>
+                <label>기준값<input type="number" min="1" max="10000" value={threshold} onChange={e => setThreshold(e.target.value)} /></label>
+                <button onClick={loadAnalysis} disabled={!observation}>결과 불러오기</button>
+              </div>
+              {observation && <p>after_id: {observation.after_id} · 기준시각: {observation.reference_time || "첫 결과 조회 시 설정"}</p>}
+              {report && <article>
+                <h3>{report.verdict}</h3>
+                <p>관찰값 {report.observed} · 기준 {report.threshold}</p>
+                <p>{report.reason}</p>
+                <p>조회 ID: {report.view_ids.join(", ") || "없음"}</p>
+                <p>뒤따른 404 ID: {report.error_ids.join(", ") || "없음"}</p>
+                <h3>근거 행 ({report.records.length})</h3>
+                <div style={{overflowX:"auto"}}><table><thead><tr><th>ID</th><th>수신시각</th><th>방법</th><th>경로</th><th>상태</th><th>종류</th></tr></thead>
+                  <tbody>{report.records.map(row => <tr key={row.id}><td>{row.id}</td><td>{row.received_at}</td><td>{row.method}</td><td>{row.path}</td><td>{row.status_code}</td><td>{row.kind}</td></tr>)}</tbody>
+                </table></div>
+              </article>}
+            </section>
+            <h2>관찰 메모</h2>
+            <NotesClient />
+          </details>
         </>
       )}
     </main>
