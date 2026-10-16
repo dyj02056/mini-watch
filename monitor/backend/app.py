@@ -11,6 +11,12 @@ from routes.events import events_bp
 from routes.analysis import analysis_bp
 from routes.notes import notes_bp
 from routes.detection import detection_bp
+from routes.investigation import investigation_bp
+from routes.soar import soar_bp
+from routes.url_playbook import url_playbook_bp
+from url_playbook_service import recover_interrupted_runs
+from url_playbook_automation import start_auto_worker
+from soar_service import start_worker
 from auth_helpers import api_access_error, configure_session, no_cache
 from error_handlers import register_error_handlers
 from observability import init_observability
@@ -25,8 +31,14 @@ app.register_blueprint(events_bp)
 app.register_blueprint(analysis_bp)
 app.register_blueprint(notes_bp)
 app.register_blueprint(detection_bp)
+app.register_blueprint(investigation_bp)
+app.register_blueprint(soar_bp)
+app.register_blueprint(url_playbook_bp)
 register_error_handlers(app)
 app.after_request(no_cache)
+recover_interrupted_runs()
+start_worker()
+start_auto_worker()
 
 
 @app.get("/api/sentry-test")

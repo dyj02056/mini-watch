@@ -4,6 +4,9 @@ import { requestJson } from "../api/client";
 import NotesClient from "./NotesClient";
 import DetectionClient from "./DetectionClient";
 import AnalysisClient from "./AnalysisClient";
+import HistoryDetectionClient from "./HistoryDetectionClient";
+import InvestigationClient from "./InvestigationClient";
+import LightPlaybookClient from "./LightPlaybookClient";
 
 export default function MonitorClient() {
   const [user, setUser] = useState(null);
@@ -13,6 +16,7 @@ export default function MonitorClient() {
   const [threshold, setThreshold] = useState(10);
   const [observation, setObservation] = useState(null);
   const [report, setReport] = useState(null);
+  const [historyObservationId, setHistoryObservationId] = useState(null);
   const [message, setMessage] = useState("");
   const checkSession = useCallback(async () => {
     try {
@@ -40,6 +44,7 @@ export default function MonitorClient() {
       setEvents([]);
       setObservation(null);
       setReport(null);
+      setHistoryObservationId(null);
       setMessage("로그아웃했습니다.");
     } catch (error) { setMessage(error.message); }
   }
@@ -86,6 +91,15 @@ export default function MonitorClient() {
           <p>{user.username} 사용자</p>
           <button onClick={logout}>로그아웃</button>
           <DetectionClient />
+          <details className="detection-log-review" id="day5-workflow">
+            <summary>공지 이력·조사·자동 대응 실습</summary>
+            <div className="soar-preparation">
+              <p>공지 저장과 파일 센서 기록을 같은 관찰 경계에서 연결합니다. 기존 HTTP 분석 관찰과는 별도로 저장됩니다.</p>
+              <HistoryDetectionClient onObservation={setHistoryObservationId} />
+              <InvestigationClient key={historyObservationId || "history-unstarted"} automationMode />
+              <LightPlaybookClient username={user.username} observationId={historyObservationId} />
+            </div>
+          </details>
           <details className="detection-log-review">
             <summary>앱·Nginx 원본 로그 함께 보기</summary>
             <AnalysisClient />

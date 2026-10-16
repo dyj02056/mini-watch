@@ -36,6 +36,7 @@ def login():
     g.auth_event = authentication_event(username.strip(), "auth_success")
     session.clear()
     session["user_id"] = user["id"]
+    session["auth_event_id"] = g.auth_event["event_id"]
     return {
         "user": {"id": user["id"], "username": user["username"]},
         "csrf_token": csrf_token(),

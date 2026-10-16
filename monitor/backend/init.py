@@ -1,7 +1,14 @@
 import os
 
+from detection_service import prepare_observation
+from soar_store import prepare_state
+from url_playbook_automation import prepare_automation
+
 
 def main():
+    prepare_state()
+    prepare_observation()
+    prepare_automation()
     if os.environ.get("SEED_CLASSROOM_ACCOUNTS", "false").lower() == "true":
         from seed_classroom import main as prepare_classroom
         prepare_classroom()

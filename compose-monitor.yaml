@@ -23,6 +23,8 @@ services:
     volumes:
     - ./monitor/backend/learning/data:/app/learning/data:ro
     - classroom-logs:/classroom-logs:ro
+    - detection-state:/detection-state
+    - ./monitor/backend/soar_rules.py:/app/soar_rules.py:ro
     environment:
       DB_HOST: monitor-db
       DB_PORT: '5432'
@@ -34,6 +36,10 @@ services:
       EVENT_TOKEN: local-training-token-change-for-production
       SEED_CLASSROOM_ACCOUNTS: "true"
       CLASSROOM_LOG_DIR: /classroom-logs
+      DETECTION_STATE_PATH: /detection-state/observations.sqlite3
+      SOAR_STATE_PATH: /detection-state/soar.sqlite3
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
     depends_on:
       monitor-db:
         condition: service_healthy
@@ -60,6 +66,7 @@ services:
     - monitor-web
 volumes:
   monitor-data: {}
+  detection-state: {}
   classroom-logs:
     external: true
     name: m5d1-classroom-logs

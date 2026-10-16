@@ -17,6 +17,30 @@
 | `monitor/next-frontend/components/DetectionClient.js` | Compose에서 실행하는 Next.js 화면에 반복 실패 탐지를 표시합니다. |
 | `monitor/next-frontend/components/AnalysisClient.js` | 앱과 Nginx 원본을 함께 검색하고 정규화해 보여 줍니다. |
 
+## 공지 이력·조사·대응 실습 추가
+
+day5의 공지 저장 및 읽기 전용 파일 센서, 요청 이력 기반 조사, 플레이북, SOAR 승인·검증·복구 흐름을 통합했습니다. 감시 화면에는 기존 HTTP 분석·반복 실패 탐지·메모와 별도로 **공지 이력·조사·자동 대응 실습** 영역이 있습니다. 일반 사이트의 `/notice`에서 내용을 바꾸면 공유 파일 볼륨의 센서가 변경을 기록하고, 감시 API가 요청 이력과 사건을 연결합니다.
+
+이 기능의 추가 실행 상태(관찰 경계, 대응 요청, 플레이북 실행·AI 비교)는 `detection-state` Docker 볼륨의 SQLite 파일에 저장합니다. 일반 앱은 `notice-state` 볼륨에 공지·정책·스냅샷을 저장하고 센서는 해당 볼륨을 읽기 전용으로 사용합니다. 이 상태 저장은 기존 Neon 연결을 대체하지 않으며, Neon의 연결 코드·환경 변수·배포 스키마에는 변경이 필요하지 않습니다. day06의 기존 Neon 테이블도 그대로 사용합니다.
+
+AI 판단과 비교를 쓰려면 Docker Compose 실행 전에 `OPENAI_API_KEY`와 `OPENAI_MODEL`을 모두 설정하세요. 모델 이름이 비어 있으면 실제 AI 연결은 수행되지 않습니다. PowerShell에서는 현재 터미널 세션에만 다음처럼 설정할 수 있습니다.
+
+```powershell
+$env:OPENAI_API_KEY = "실제 키를 여기에 입력"
+$env:OPENAI_MODEL = "사용할 모델 이름"
+```
+
+키가 없으면 실제 AI 연결은 수행되지 않고 미연결 상태가 표시됩니다. 키를 README, `.env` 커밋, 화면에 붙여 넣지 마세요.
+
+기존 로컬 Compose 구성을 사용하는 경우 두 스택을 빌드해 시작합니다. 새 `notice-state`와 `detection-state` 볼륨은 첫 실행 때 자동 생성됩니다.
+
+```powershell
+docker compose -f compose-general.yaml up -d --build --wait
+docker compose -f compose-monitor.yaml up -d --build --wait
+```
+
+일반 앱은 `http://localhost:8081/notice`, 감시 화면은 `http://localhost:8082`입니다. 일반 앱과 감시 앱은 기존처럼 같은 이벤트 토큰과 `m5d1-events` 네트워크를 사용해야 합니다. Compose 파일의 로컬 DB 설정을 Neon 배포 설정으로 복사하지 마세요. Neon 배포 환경에서 파일 센서 기능을 함께 쓰려면 일반 앱·센서·감시 앱이 `classroom-logs`와 공지 상태 저장소를 공유하도록 별도 배포 볼륨을 제공해야 합니다. 공유 저장소가 없으면 Neon 기반 기존 이벤트 분석은 계속 사용할 수 있지만 공지 파일 센서 사건은 만들어지지 않습니다.
+
 Compose의 일반 API는 `MONITOR_URL`로 감시 API 주소를 사용하고, 두 API의 `EVENT_TOKEN`이 같을 때 발신자 검증이 통과합니다. Compose 파일의 토큰·세션 키는 로컬 학습용 예시이며 운영에 안전한 비밀값이 아닙니다. 실제 `.env`, 비밀번호, 토큰, 키는 제출하지 마세요.
 
 로컬 Compose의 두 API는 `DB_SSLMODE=disable`로 같은 Compose 네트워크의 PostgreSQL에 연결합니다. Neon 등 TLS를 요구하는 원격 DB 설정에서는 해당 환경에 맞는 SSL 모드를 유지합니다.

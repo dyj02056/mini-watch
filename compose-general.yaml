@@ -22,6 +22,7 @@ services:
     build: ./general
     volumes:
     - classroom-logs:/classroom-logs
+    - notice-state:/classroom-data
     environment:
       DB_HOST: general-db
       DB_PORT: '5432'
@@ -32,15 +33,40 @@ services:
       SECRET_KEY: sample-general-session-key-not-for-production
       MONITOR_URL: http://monitor-api:5000/api/events
       REQUEST_LOG_PATH: /classroom-logs/app.jsonl
+      CLASSROOM_DATA_DIR: /classroom-data
+      CLASSROOM_SERVER_ID: general-01
       EVENT_TOKEN: local-training-token-change-for-production
       SEED_CLASSROOM_ACCOUNTS: "true"
     depends_on:
       general-db:
         condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
     networks:
     - general-front-net
     - general-data-net
     - events-net
+  file-sensor:
+    build: ./sensor
+    network_mode: none
+    volumes:
+    - notice-state:/classroom-data:ro
+    - classroom-logs:/classroom-logs
+    environment:
+      CLASSROOM_DATA_DIR: /classroom-data
+      CLASSROOM_LOG_DIR: /classroom-logs
+      CLASSROOM_SERVER_ID: general-01
+    depends_on:
+      general-api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, sensor.py, --healthcheck]
+      interval: 3s
+      timeout: 3s
+      retries: 30
   general-gateway:
     image: nginx:1.28-alpine
     ports:
@@ -54,6 +80,8 @@ services:
     - general-api
 volumes:
   general-data: {}
+  notice-state:
+    name: m5d1-notice-state
   classroom-logs:
     name: m5d1-classroom-logs
 networks:
