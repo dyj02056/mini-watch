@@ -4,6 +4,7 @@ from hashlib import sha256
 
 THRESHOLD = 3
 WINDOW_SECONDS = 60
+LOGIN_PATHS = frozenset({"/auth/login", "/api/auth/login"})
 RULE = {
     "id": "repeated-auth-failure",
     "threshold": THRESHOLD,
@@ -27,7 +28,7 @@ def parse_time(value):
 def normalize_auth_event(row):
     if row.get("event_type") not in {"login_failure", "login_success"}:
         return None
-    if row.get("method") != "POST" or row.get("path") not in {"/auth/login", "/api/auth/login"}:
+    if row.get("method") != "POST" or row.get("path") not in LOGIN_PATHS:
         return None
     if not isinstance(row.get("attempted_username"), str) or not row["attempted_username"].strip():
         return None
