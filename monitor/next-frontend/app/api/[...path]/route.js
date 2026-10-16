@@ -22,6 +22,16 @@ async function proxyRequest(request, { params }) {
     (resource === "auth/me" && method === "GET") ||
     ((resource === "auth/login" || resource === "auth/logout") && method === "POST") ||
     (resource === "events" && method === "GET") ||
+    (resource === "soar" && method === "GET") ||
+    (resource === "soar/requests" && method === "POST") ||
+    (/^soar\/requests\/[^/]+\/(notify|approve|reject|cancel|verify|recover|retry)$/.test(resource) && method === "POST") ||
+    (resource === "soar/playbook" && method === "GET") ||
+    (resource === "soar/playbook/runs" && method === "POST") ||
+    (/^soar\/playbook\/runs\/[^/]+\/(approve|verify|recover|retry|ai-summary|compare-ai)$/.test(resource) && method === "POST") ||
+    (resource === "investigation" && method === "GET") ||
+    (resource === "investigation/observation" && method === "GET") ||
+    (resource === "investigation/observation/start" && method === "POST") ||
+    ((resource === "investigation/policy" || resource === "investigation/ai") && method === "POST") ||
     ((resource === "analysis" || resource === "analysis/raw" || resource === "detection" || resource === "sentry-test") && method === "GET") ||
     ((resource === "analysis/start" || resource === "detection/start") && method === "POST") ||
     (resource === "notes" && ["GET", "POST"].includes(method)) ||
